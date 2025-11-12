@@ -1,0 +1,85 @@
+@page "/login"
+
+@using System.Security.Claims
+@using CustomAuthTestWithDB.Data
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.EntityFrameworkCore
+@inject UserDbContext DbContext
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h3>Login</h3>
+
+<EditForm Model="Model" OnValidSubmit="Authenticate" FormName="LoginForm">
+    <DataAnnotationsValidator/>
+    
+    <label>Username</label>
+    <InputText @bind-Value="Model.Username" class="form-control" placeholder="Username"></InputText>
+    <ValidationMessage For="() => Model.Username"></ValidationMessage>
+
+    <label>Password</label>
+    <InputText @bind-Value="Model.Password" class="form-control" placeholder="Password"></InputText>
+    <ValidationMessage For="() => Model.Password"></ValidationMessage>
+
+    <span class="text-danger">@errorMessage</span>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+@code {
+    // [CascadingParameter]
+    // public HttpContext? HttpContext { get; set; }
+    
+    [SupplyParameterFromForm]
+    public LoginModel Model { get; set; } = new LoginModel();
+
+    private string? errorMessage { get; set; } = "";
+
+    private async Task Authenticate()
+    {
+        if (string.IsNullOrWhiteSpace(Model.Username) || string.IsNullOrWhiteSpace(Model.Password))
+        {
+            errorMessage = "Invalid Username or Password";
+            return;
+        }
+
+        var userAccount = DbContext.UserAccounts.FirstOrDefault(x => x.UserName == Model.Username);
+        if (userAccount is null || userAccount.Password != Model.Password)
+        {
+            errorMessage = "Invalid Username or Password";
+            return;
+        }
+
+        var claims = new List<Claim>()
+        {
+            new Claim(ClaimTypes.Name, Model.Username)
+        };
+
+        //Add policies
+        var userAccountPolicies = await DbContext.UserAccountPolicies
+            .Where(x => x.UserAccountId == userAccount.Id && x.IsEnabled)
+            .ToListAsync();
+
+        foreach (var userAccountPolicy in userAccountPolicies)
+        {
+            claims.Add(new Claim(userAccountPolicy.UserPolicy!, "true"));
+        }
+        
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        // await HttpContext!.SignInAsync(principal);
+        // NavigationManager.NavigateTo("/");
+        
+        var context = HttpContextAccessor.HttpContext;
+        if (context != null)
+        {
+            await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Unable to sign in - no HTTP context available";
+        }
+    }
+}
