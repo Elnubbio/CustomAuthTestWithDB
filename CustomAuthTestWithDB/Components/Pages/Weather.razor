@@ -1,6 +1,9 @@
 ﻿@page "/weather"
+@using Microsoft.AspNetCore.Authorization
 
 <PageTitle>Weather</PageTitle>
+
+@attribute [Authorize(policy: UserPolicy.VIEW_WEATHER)]
 
 <h1>Weather</h1>
 

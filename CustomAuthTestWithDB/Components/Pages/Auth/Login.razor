@@ -4,10 +4,14 @@
 @using CustomAuthTestWithDB.Data
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @inject UserDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject IHttpContextAccessor HttpContextAccessor
+
+@attribute [ExcludeFromInteractiveRouting]
+@attribute [AllowAnonymous]
 
 <h3>Login</h3>
 

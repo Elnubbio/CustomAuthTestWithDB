@@ -2,6 +2,9 @@
 @using Microsoft.AspNetCore.Authentication
 @inject NavigationManager NavigationManager
 
+
+@attribute [ExcludeFromInteractiveRouting]
+
 <span>Logged out</span>
 
 @code {
